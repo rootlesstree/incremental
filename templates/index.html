@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
+
+
     <meta charset="UTF-8">
     <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="static/app.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">;
     <title> Incremental Demo </title>
     <style>
-    div {
-        border-style: solid;
-    }
+    	div {border-style: solid;}
     </style>
     </head>
 
@@ -17,70 +17,89 @@
 aloha
 </nav>
 
-<div class='col-md-6'></div>
 
 
+<script src="//cdn.jsdelivr.net/velocity/1.2.2/velocity.min.js"></script>
 
 <script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+
+     <script>
+
+     $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+     var data = JSON.parse('{{data|tojson|safe}}');
+     var total_data = data['total_data'];
+     var total_points = total_data.length;
+     </script>
+
 
 <script>
-var radius = 25;
-
-window.states = [
-    { x : 43, y : 67, label : "first" },
-    { x : 340, y : 150, label : "second" },
-    { x : 200, y : 250, label : "third" },
-    { x : 300, y : 320, label : "fourth" },
-    { x : 50, y : 250, label : "fifth" },
-    { x : 90, y : 170, label : "last" }
-]
-
-
-
-var diameter = 960,
-    format = d3.format(",d"),
-    color = d3.scale.category20c();
-
-var bubble = d3.layout.pack()
-    .sort(null)
-    .size([diameter, diameter])
-    .padding(1.5);
-
-var drag = d3.behavior.drag()
-    .on("drag",function(d,i){
-        var selection = d3.selectAll('.selected');
-        if(selection[0].indexOf(this)){
-            selection.classed("selected",false);
-            selection = d3.select(this);
-            selection.classed("selected",true);
-        }
-
-    selection.attr("transform", function( d, i) {
-        d.x += d3.event.dx;
-        d.y += d3.event.dy;
-        return "translate(" + [ d.x,d.y ] + ")"
-    })
-        this.parentNode.appendChild(this);
-        d3.event.sourceEvent.stopPropagation();
-    });
+var data_json = {"train_set":[],"test_set":total_data};
+var universal_tester;
+var mouseup_timer = -1;
+var current_time = 0;
+var label_to_color_map = {1:"black",2:"yellow",3:"blue"};
+var train_pool_width = 1000;
+var train_pool_height = 500;
+var points_per_row = 20;
+var num_of_cols = parseInt(total_data/points_per_row) + 1;
+var radius = parseInt(Math.min(train_pool_width,train_pool_height)/points_per_row/2);
 
 
-var svg = d3.select("body div").append("svg")
-    .attr("width", diameter)
-    .attr("height", diameter)
-    .attr("class", "bubble");
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
 
-svg.on('mousedown',function() {
-if(!d3.event.ctrlKey) {
-    d3.selectAll('.selected').classed('selected',false);
+
+
+var decide_enter_redzone = function(x){
+    if ( x > train_pool_width) 
+        return true;
+    else
+        return false;};
+
+window.states = [];
+
+for (i = 0; i < total_data.length; i++) { 
+    row = parseInt( i/points_per_row );     
+    col = (i+1) % 20 - 1;
+    key = Object.keys(total_data[i]);
+    window.states.push({x:col*radius*2+radius,y: row*radius*2+radius,label:label_to_color_map[[total_data[i][key]]],'data_path':key });
 }
 
-var p = d3.mouse(this);
+
+window.svg = d3.select("body")
+.append("svg")
+//.attr("viewBox", "0 0 " + 1000 + " " + 1000 )
+//.attr("preserveAspectRatio", "xMinYMin")
+.attr("width", train_pool_width*2)
+.attr("height", train_pool_height*2);
+
+svg.append("rect").attr({
+	"x" : 0,
+    "y" : 0,
+    "width" : "1000",
+	"height" : "500",
+	"fill": "none",
+	"stroke":"pink",
+	"stroke-width" : 10
+});
+
+svg.append("rect").attr({
+    "x": 1005,
+    "y": 0,
+	"width" : "1000",
+	"height" : "500",
+	"fill": "none",
+	"stroke":"black",
+	"stroke-width" : 10	
+});
 
 
-})
 
-var gStates = svg.selectAll('g.state').data(states);
+var gStates = svg.selectAll( "g.state").data( states);
 
 var gState = gStates.enter().append( "g")
     .attr({
@@ -90,11 +109,34 @@ var gState = gStates.enter().append( "g")
         'class'     : 'state' 
     })
 ;
-    
+
+var drag = d3.behavior.drag()
+.on("drag", function( d, i) {
+    var selection = d3.selectAll( '.selected');
+
+    if( selection[0].indexOf( this)==-1) {
+        selection.classed( "selected", false);
+        selection = d3.select( this);
+        selection.classed( "selected", true);
+    } 
+
+    selection.attr("transform", function( d, i) {
+        d.x += d3.event.dx;
+        d.y += d3.event.dy;
+        return "translate(" + [ d.x,d.y ] + ")"
+    })
+        // reappend dragged element as last 
+        // so that its stays on top 
+    this.parentNode.appendChild( this);
+    d3.event.sourceEvent.stopPropagation();
+});
+gState.call( drag);
+
 gState.append( "circle")
     .attr({
         r       : radius + 4,
-        class   : 'outer'
+        class   : 'outer',
+        fill    : function(d) {return d.label;}
     })
 ;
 gState.append( "circle")
@@ -125,7 +167,293 @@ gState.append( "circle")
     });
 ;        
 
-gState.call(drag);
+// ------------------------------------------
+// ------------------------------------------
+// Start the game of rect selection
+// ------------------------------------------
+// ------------------------------------------
+var Rect_Display = true;
+var Prohibit_Mouse_Start_From_Circle_Check = true;
+
+svg
+.on( "mousedown", function() {
+
+    if( !d3.event.ctrlKey) {
+        d3.selectAll( 'g.selected').classed( "selected", false);
+    }
+    
+    var p = d3.mouse( this);
+
+    d3.selectAll( 'g.state >circle.inner').each( function( state_data, i) {
+            if( 
+                Math.abs(state_data.x-p[0])<=radius && Math.abs(state_data.y-p[1])<=radius ) {
+                d3.select( this.parentNode)
+                .classed( "selected", true);
+                Rect_Display = false;
+            }
+        });
+
+
+    if(Rect_Display){
+
+
+    svg.append( "rect")
+    .attr({
+        rx      : 6,
+        ry      : 6,
+        class   : "selection",
+        x       : p[0],
+        y       : p[1],
+        width   : 0,
+        height  : 0
+    })
+    }
+    
+})
+.on( "mousemove", function() {
+
+	if(Rect_Display){
+
+	
+    var s = svg.select( "rect.selection");
+
+    if( !s.empty()) {
+        var p = d3.mouse( this),
+            d = {
+                x       : parseInt( s.attr( "x"), 10),
+                y       : parseInt( s.attr( "y"), 10),
+                width   : parseInt( s.attr( "width"), 10),
+                height  : parseInt( s.attr( "height"), 10)
+            },
+            move = {
+                x : p[0] - d.x,
+                y : p[1] - d.y
+            }
+        ;
+
+        if( move.x < 1 || (move.x*2<d.width)) {
+            d.x = p[0];
+            d.width -= move.x;
+        } else {
+            d.width = move.x;       
+        }
+
+        if( move.y < 1 || (move.y*2<d.height)) {
+            d.y = p[1];
+            d.height -= move.y;
+        } else {
+            d.height = move.y;       
+        }
+       
+        s.attr( d);
+
+            // deselect all temporary selected state objects
+        d3.selectAll( 'g.state.selection.selected').classed( "selected", false);
+
+        d3.selectAll( 'g.state >circle.inner').each( function( state_data, i) {
+            if( 
+                !d3.select( this).classed( "selected") && 
+                    // inner circle inside selection frame
+                state_data.x-radius>=d.x && state_data.x+radius<=d.x+d.width && 
+                state_data.y-radius>=d.y && state_data.y+radius<=d.y+d.height
+            ) {
+
+                d3.select( this.parentNode)
+                .classed( "selection", true)
+                .classed( "selected", true);
+            }
+        });
+    }}
+})
+.on( "mouseup", function() {
+       // remove selection frame
+    svg.selectAll( "rect.selection").remove();
+    var p = d3.mouse(this);
+    console.log(p);
+        // remove temporary selection marker class
+    var slection_objects = d3.selectAll('.selected>circle.inner');
+
+    if(mouseup_timer==-1){
+        mouseup_timer = 0;
+        current_time = new Date().getTime() / 1000;
+    }
+    else {
+        var new_time = new Date().getTime() / 1000;
+        mouseup_timer += (new_time - current_time);
+        current_time = new_time;
+    }
+
+    slection_objects.each(function(d,i){
+        if(decide_enter_redzone(d.x)){
+        var the_elements = d3.selectAll('g.selected>circle');
+        universal_tester = the_elements;
+        console.log(this);
+        var adjustment = String(train_pool_width*2 - p[0])+ " " + String(parseInt(train_pool_height/2)-p[1])
+        
+        the_elements.append("animateTransform").attr(
+            {
+                attributeName:"transform",
+                type:"translate",
+                from:"0 0",
+                to:adjustment,
+                begin :String(mouseup_timer)+"s",
+                dur:"2s",
+                repeatCount:1,
+                fill : "freeze"
+            });
+
+        setTimeout(function(){
+        the_elements.each(function(){
+            this.style.visibility = "hidden";
+        });
+
+        },1500);
+        var data_in_the_element = the_elements.data()[0];
+        var new_key = data_in_the_element['data_path'][0];
+        var new_obj = {};
+        new_obj[new_key] = data_in_the_element['label'];
+        data_json["train_set"].push(new_obj);
+        data_json["test_set"].splice(data_json["test_set"].indexOf(new_obj),1);
+
+        }
+
+    });
+
+    //d3.selectAll( 'g.state.selection').classed( "selection", false);
+
+
+          //if(decide_enter_redzone(se))
+           /*d3.selectAll('g.state.selection>circle').append("animateTransform").attr(
+            {
+                attributeName:"transform",
+                type:"translate",
+                from:"0 0",
+                to:"300 20",
+                begin :"0s",
+                dur:"1s",
+                repeatCount:1
+            });
+
+            */
+    if(d3.selectAll('.selected')[0].length >0){
+    	Rect_Display = !Rect_Display;}
+        d3.selectAll( 'g.state.selection').classed( "selection", false); 
+        d3.selectAll( 'g.state.selection').classed( "selected", false); 
+
+})
+
+
+
+</script>
+
+      <form role="form" method='POST' action='/'>
+        <button type="button" id="run" class="btn btn-success btn-lg">Success</button>
+      </form>
+
+
+
+  <animateTransform attributeName="transform" type="translate" from="0 0" to="300 20" begin="0s" dur="0.1s" repeatCount="indefinite"></animateTransform>
+
+
+
+<script>
+
+window.svg_display = d3.select("body").append("svg").attr("width", train_pool_width*2).attr("height", train_pool_height*2);
+svg_display.append("rect").attr({
+    "x" : 0,
+    "y" : 0,
+    "width" : "1000",
+    "height" : "500",
+    "fill": "none",
+    "stroke":"red",
+    "stroke-width" : 10
+});
+
+window.svg_display.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+
+var line = d3.svg.line()
+    .x(function(d) { return x(d.size); })
+    .y(function(d) { return y(d.acc); })
+    .interpolate("linear"); 
+
+$(function() {
+    $('#run').bind('click', function() {
+
+
+$.ajax({
+  type: "POST",
+  contentType: "application/json; charset=utf-8",
+  url: "/_generate",
+  data: JSON.stringify(data_json),
+
+  success: function (data) {
+
+    universal_tester = data.data;
+    var parsed_data = [];
+
+    for (var key in data.data) {
+     parsed_data.push({size:key,acc:data.data[key]});   
+    }
+    universal_tester = parsed_data;
+
+  x.domain([0,50]);
+  y.domain([0,1]);
+
+
+  svg_display.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(100," + height + ")")
+      .call(xAxis);
+  svg_display.append("g")
+      .attr("transform", "translate(100,0)")  
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Accuracy");
+  svg_display.append("path")
+            .attr("transform", "translate(100,0)")  
+            .attr("d", line(parsed_data))
+            .style("stroke-width", 2)
+            .style("stroke", "steelblue")
+            .style("fill", "none");
+
+  },
+  dataType: "json"
+});
+
+
+
+  /*  $.getJSON( '/_generate', JSON.stringify({a:{c:3},b:{g:3}}), function(data) {
+        console.log(data);
+   });
+      return false;
+*/
+
+    }
+    );
+  });
+
+
 </script>
 
 </body>
