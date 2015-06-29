@@ -6,10 +6,10 @@ train_label = io.loadmat('train_label_C3.mat')
 train_label = train_label['train_labels']
 test_label = io.loadmat('test_label_C3.mat')
 test_label = test_label['test_labels']
-LBP = io.loadmat('train_lbphf_sam24_C3.mat')
-LBP_train = LBP['train_lbphf_sam24']
-LBP = io.loadmat('test_lbphf_sam24_C3.mat')
-LBP_test = LBP['test_lbphf_sam24']
+LBP = io.loadmat('train_lbphf_sam16_C3.mat')
+LBP_train = LBP['train_lbphf_sam16']
+LBP = io.loadmat('test_lbphf_sam16_C3.mat')
+LBP_test = LBP['test_lbphf_sam16']
 
 data = {"train_data":[],"test_data":[],"total_data":[]}
 

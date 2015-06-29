@@ -1,0 +1,48 @@
+{% extends "index.html" %}
+
+{% block main_content %}
+
+<script>
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex ;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+     $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+     var data = JSON.parse('{{data|tojson|safe}}');
+     var total_data = data['train_data'];
+     var total_points = total_data.length;
+	 var label_to_color_map = {1:"black",2:"yellow",3:"blue"};
+	 var inv_label_color_map = {"black":1,"yellow":2,"blue":3};
+	 var points_per_row = 20;
+	 var radius = 15;
+	 var num_of_cols = parseInt(total_points/points_per_row) + 1;
+	 var train_pool_width = 2*radius*(1+points_per_row);
+	 var train_pool_height = (num_of_cols+1)*radius*2;
+	 var data_json = {};
+
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+
+
+
+</script>
+
+{% endblock %}

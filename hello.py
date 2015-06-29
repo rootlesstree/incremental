@@ -36,7 +36,11 @@ def accuracy(array_a,array_b):
 
 @app.route('/')
 def index(methods=None):
-    return render_template('demo2.html',data=lbp_data)
+    return render_template('demo3.html',data=lbp_data)
+
+@app.route('/demo2')
+def demo2():
+	return render_template('demo2.html',data=lbp_data)
 
 @app.route('/demo1')
 def demo1():
@@ -60,7 +64,7 @@ def react_demo2():
 		pos = int(d[0])
 		train_data.append(total_data[pos])
 		train_label.append(int(lbp_data["train_data"][pos][d[0]].encode('utf-8')))
-	svm = SVC(C=10)
+	svm = SVC(C=10,kernel='linear')
 	svm.fit(train_data,train_label)
 	predictions = svm.predict(test_data)
 	returned_data[len(data)] = accuracy(predictions,test_label)
