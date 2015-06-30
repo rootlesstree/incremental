@@ -70,6 +70,27 @@ def react_demo2():
 	returned_data[len(data)] = accuracy(predictions,test_label)
 	return jsonify(data=returned_data)
 
+@app.route('/_react_demo3',methods=['POST','GET'])
+def react_demo3():
+	data = request.json['train_data']
+	label = request.json['train_label']
+	returned_data = {}
+	train_data = []
+	train_label = label
+	for d in data:
+		pos = int(d)
+		train_data.append(total_data[pos])
+	print"1"
+	svm = SVC(C=10,kernel='linear')
+	print "2"
+	svm.fit(train_data,train_label)
+	print "3"
+	predictions = svm.predict(test_data)
+	print "333"
+	returned_data[len(data)] = accuracy(predictions,test_label)
+	return jsonify(data=returned_data)
+
+
 
 if __name__ == '__main__':
     app.run()

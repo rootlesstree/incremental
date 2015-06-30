@@ -160,7 +160,7 @@ window.svg.on( "mousedown", function() {
     }
     
     var p = d3.mouse( this);
-
+    console.log(p);
     d3.selectAll( 'g.state >circle.inner').each( function( state_data, i) {
             if( 
                 Math.abs(state_data.x-p[0])<=radius && Math.abs(state_data.y-p[1])<=radius ) {

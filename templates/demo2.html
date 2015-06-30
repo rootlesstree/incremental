@@ -6,6 +6,12 @@
      <script>
 
      $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    win_x = w.innerWidth || e.clientWidth || g.clientWidth,
+    win_y = w.innerHeight|| e.clientHeight|| g.clientHeight;
 
      var data = JSON.parse('{{data|tojson|safe}}');
      var total_data = data['train_data'];
@@ -13,7 +19,7 @@
 	 var label_to_color_map = {1:"black",2:"yellow",3:"blue"};
 	 var inv_label_color_map = {"black":1,"yellow":2,"blue":3};
 	 var points_per_row = 20;
-	 var radius = 15;
+	 var radius = parseInt((win_x/2/2)/points_per_row);
 	 var num_of_cols = parseInt(total_points/points_per_row) + 1;
 	 var train_pool_width = 2*radius*(1+points_per_row);
 	 var train_pool_height = (num_of_cols+1)*radius*2;
@@ -141,15 +147,15 @@ window.svg.append("rect").attr({
 window.svg.append("rect").attr({
     "x" : train_pool_width*1.5,
     "y" : train_pool_height/2,
-    "width" : radius*2.5,
-    "height" : radius*2.5,
+    "width" : radius*3,
+    "height" : radius*3,
     "fill": "none",
     "stroke":"black",
     "stroke-width" : 5
 });
 
- target_move_in_x = train_pool_width*1.5+21;
- target_move_in_y = train_pool_height/2+19;
+ target_move_in_x = train_pool_width*1.5+radius*1.5;
+ target_move_in_y = train_pool_height/2+radius*1.5;
 
 var gStates = svg.selectAll( "g.state").data(states);
 
